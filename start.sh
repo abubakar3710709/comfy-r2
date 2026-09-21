@@ -2,11 +2,13 @@
 set -u
 echo ">>> [1/4] SSH"
 mkdir -p /root/.ssh /run/sshd
+ssh-keygen -A 2>/dev/null || true
 if [ -n "${PUBLIC_KEY:-}" ]; then
   echo "$PUBLIC_KEY" >> /root/.ssh/authorized_keys
   chmod 700 /root/.ssh; chmod 600 /root/.ssh/authorized_keys
 fi
-/usr/sbin/sshd || true
+sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config 2>/dev/null || true
+/usr/sbin/sshd || echo "    (sshd failed to start)"
 echo ">>> [2/4] Configuring rclone for R2"
 mkdir -p /root/.config/rclone
 cat > /root/.config/rclone/rclone.conf <<EOF
@@ -28,6 +30,11 @@ if [ -n "${MODELS:-}" ]; then
 else
   echo "    booting empty (fast). Load one with:  getmodel <name>"
 fi
-echo ">>> [4/4] Starting ComfyUI on :8188"
+echo ">>> [4/4] Starting ComfyUI on :8188 (background; container stays alive for SSH)"
 cd /app/ComfyUI
-exec python main.py --listen 0.0.0.0 --port 8188
+python main.py --listen 0.0.0.0 --port 8188 > /var/log/comfyui.log 2>&1 &
+echo "    ComfyUI PID $! — logs: /var/log/comfyui.log"
+# Keep the container alive no matter what ComfyUI does, so SSH always works.
+touch /var/log/comfyui.log
+tail -n +1 -f /var/log/comfyui.log &
+sleep infinity
