@@ -23,6 +23,15 @@ no_check_bucket = true
 EOF
 install -m 0755 /app/getmodel.sh /usr/local/bin/getmodel 2>/dev/null || true
 install -m 0755 /app/addmodel.sh /usr/local/bin/addmodel 2>/dev/null || true
+# make PATH (conda -> hf) + R2 env available to SSH / interactive shells too
+cat > /etc/profile.d/comfyr2.sh <<PENV
+export PATH=/opt/conda/bin:\$PATH
+export R2_BUCKET="${R2_BUCKET:-}"
+export R2_ACCESS_KEY="${R2_ACCESS_KEY:-}"
+export R2_SECRET_KEY="${R2_SECRET_KEY:-}"
+export R2_ACCOUNT_ID="${R2_ACCOUNT_ID:-}"
+PENV
+chmod 0644 /etc/profile.d/comfyr2.sh
 echo ">>> [3/4] Models"
 if [ -n "${MODELS:-}" ]; then
   echo "    auto-loading: ${MODELS}"

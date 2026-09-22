@@ -11,7 +11,7 @@ if [ "${1:-}" = "--list" ] || [ -z "${1:-}" ]; then
 fi
 for NAME in "$@"; do
   SRC="r2:${R2_BUCKET}/comfy-models/${NAME}"
-  rclone lsf "$SRC" >/dev/null 2>&1 || { echo "!! no bundle '${NAME}' — try: getmodel --list"; continue; }
+  rclone lsf "$SRC/" 2>/dev/null | grep -q . || { echo "!! no bundle '${NAME}' — try: getmodel --list"; continue; }
   echo ">>> loading '${NAME}' ..."
   rclone copy "$SRC" "$DEST" --transfers 8 --checkers 16 --fast-list --progress
   echo ">>> '${NAME}' ready."
